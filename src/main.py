@@ -13,6 +13,10 @@ BASE_DIR = os.path.dirname(__file__)   # carpeta src
 model_path = os.path.join(BASE_DIR, "modelo_heimlich.pkl")
 model = joblib.load(model_path)
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     # Lee la imagen
