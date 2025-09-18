@@ -1,10 +1,30 @@
+#######################################################################################
+#    Nombre: Heimlich - Trainer IA                                                    #
+#    Autor: Damian Kuczerawy                                                          #
+#    Version: 1.0.0                                                                   #
+#    Descripcion:                                                                     #
+#        Carga el modelo IA entrenado en MoveNet y clasifica las imagenes en base al  #
+#        modelo pre entrenado.                                                        #
+#                                                                                     #
+#######################################################################################
+#    Autor        Fecha            Version        Descripcion                         #
+#     KD         11/09/2025        1.0.0         Creación.                            #
+#                                                                                     #
+#######################################################################################
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 import uvicorn
+import tensorflow_hub as hub
+import tensorflow as tf
+import numpy as np
 import io
 import os, joblib
 from PIL import Image
 import joblib  # O usa torch, tensorflow, etc. según tu modelo
+
+# Índices
+TORSO_IDXS = [5, 6, 11, 12]   # hombros y caderas
+WRIST_IDXS = [9, 10]          # muñecas
 
 app = FastAPI()
 
@@ -13,24 +33,91 @@ BASE_DIR = os.path.dirname(__file__)   # carpeta src
 model_path = os.path.join(BASE_DIR, "modelo_heimlich.pkl")
 model = joblib.load(model_path)
 
+_movenet = None
+
+def _movenet_keypoints(image_tf):
+    """Devuelve (17,3) con (y,x,score) en [0,1]."""
+    inp = tf.image.resize_with_pad(tf.expand_dims(image_tf, axis=0), 256, 256)
+    inp = tf.cast(inp, dtype=tf.int32)
+    out = movenet.signatures['serving_default'](inp)
+    return out['output_0'][0, 0, :, :].numpy()
+
+def _has_hands_and_torso(kps, min_score=0.30):
+    scores = kps[:, 2]
+    torso_ok = all(scores[i] >= min_score for i in TORSO_IDXS)
+    hand_ok  = any(scores[i] >= min_score for i in WRIST_IDXS)  # al menos una muñeca
+    return torso_ok and hand_ok
+    
+def _load_movenet():
+    global _movenet
+        url = "https://tfhub.dev/google/movenet/singlepose/thunder/4"
+        _movenet = hub.load(url)
+    return _movenet
+
+def _decode_base64_to_pil(b64: str) -> Image.Image:
+    try:
+        raw = base64.b64decode(b64, validate=True)
+        img = Image.open(io.BytesIO(raw)).convert("RGB")
+        return img
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Imagen base64 inválida: {e}")
+
+
+def _detect_pose(image, modelo, tau=0.40, min_score=0.30, default_class=0):
+    """
+    image: tensor TF (H,W,3) uint8
+    modelo: clasificador scikit-learn con predict_proba
+    tau: umbral de confianza del clasificador
+    min_score: umbral de confianza de keypoints
+    default_class: clase a devolver si falla el filtro o la confianza es baja
+    Devuelve (pred, proba, razon)
+    """
+    # 1) Keypoints (17,3)
+    kps = _movenet_keypoints(image)
+
+    # 2) Clasificar (aplanar luego del filtro)
+    vector = kps.flatten()
+    proba = modelo.predict_proba([vector])[0]   # p(c|x)
+    c_hat = int(np.argmax(proba))
+
+    # 3) Filtro previo: requiere torso + muñeca
+    if not _has_hands_and_torso(kps, min_score=min_score):
+        return default_class, proba, "sin_manos_o_sin_torso"
+    # 4) Rechazo por baja confianza
+    if float(np.max(proba)) < float(tau):
+        return default_class, proba, f"baja_confianza({np.max(proba):.2f}<{tau})"
+
+    return c_hat, proba, "ok"
+
 @app.get("/health")
-def health():
+def health(): 
+    #Dispara cargas lentas para que el arranque “en caliente” sea más rápido
+    _ = _load_movenet()
     return {"status": "ok"}
 
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
-    # Lee la imagen
-    image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes))
-    
-    # Preprocesa la imagen según lo que espera tu modelo
-    # Por ejemplo, resize, normalización, etc.
-    # processed_image = preprocess(image)
-    
-    # Realiza la predicción
-    # prediction = model.predict([processed_image])
-    prediction = "heimlich_detected"  # Simulación, reemplaza por tu lógica real
-    
+@app.post("/predict", response_model=PredictOut)
+def predict(payload: PredictIn):
+    results = []
+
+    for idx, img_b64 in enumerate(payload.images):
+        try:
+            
+            # 1) Decodificar imagen
+            img = _decode_base64_to_pil(payload.image_b64)
+
+            # 2) Extraer keypoints con MoveNet
+            c_hat, pred, res = _detect_pose(img,model)
+
+        except Exception as e:
+            results.append(f"error: {str(e)}") 
+            
+    #return PredictOut(
+    #    predicted_label=pred_label,
+    #    predicted_index=pred_idx,
+    #    probabilities=probs,
+    #    keypoints=kps.tolist(),
+    #)
+
     return JSONResponse(content={"prediction": prediction})
 
 if __name__ == "__main__":
