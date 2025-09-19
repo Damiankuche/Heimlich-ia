@@ -50,8 +50,8 @@ def _has_hands_and_torso(kps, min_score=0.30):
     
 def _load_movenet():
     global _movenet
-        url = "https://tfhub.dev/google/movenet/singlepose/thunder/4"
-        _movenet = hub.load(url)
+    url = "https://tfhub.dev/google/movenet/singlepose/thunder/4"
+    _movenet = hub.load(url)
     return _movenet
 
 def _decode_base64_to_pil(b64: str) -> Image.Image:
