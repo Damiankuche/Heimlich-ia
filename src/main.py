@@ -20,6 +20,8 @@ import numpy as np
 import io
 import os, joblib
 from PIL import Image
+from typing import List, Optional
+from pydantic import BaseModel
 import joblib  # O usa torch, tensorflow, etc. según tu modelo
 
 # Índices
@@ -32,6 +34,9 @@ app = FastAPI()
 BASE_DIR = os.path.dirname(__file__)   # carpeta src
 model_path = os.path.join(BASE_DIR, "modelo_heimlich.pkl")
 model = joblib.load(model_path)
+
+class PredictIn(BaseModel):
+    images: List[str]        # lista de imágenes en base64
 
 _movenet = None
 
