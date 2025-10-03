@@ -95,9 +95,7 @@ def _detect_pose(image, modelo, tau=0.40, min_score=0.30, default_class=0):
     return c_hat, proba, "ok"
 
 @app.get("/health")
-def health(): 
-    #Dispara cargas lentas para que el arranque “en caliente” sea más rápido
-    _ = _load_movenet()
+def health():
     return {"status": "ok"}
 
 @app.post("/predict", response_model=PredictOut)
