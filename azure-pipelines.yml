@@ -16,7 +16,7 @@ steps:
 
 - task: AzureWebApp@1
   inputs:
-    azureSubscription: 'your-azure-subscription'
-    appName: 'your-app-name'
+    azureSubscription: 'Azure for Students'
+    appName: 'HeimlichTrainerIA'
     package: '$(System.DefaultWorkingDirectory)/**/*.zip'
     runtimeStack: 'PYTHON|3.8'
