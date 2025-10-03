@@ -40,6 +40,21 @@ class PredictIn(BaseModel):
 
 _movenet = None
 
+def _get_model():
+    global MODEL
+    if MODEL is None:
+        if os.path.exists(LOCAL_MODEL_PATH):
+            MODEL = tf.saved_model.load(LOCAL_MODEL_PATH)
+        else:
+            MODEL = hub.load("https://tfhub.dev/google/movenet/singlepose/thunder/4")
+            # guarda una copia local para próximos arranques
+            try:
+                os.makedirs(LOCAL_MODEL_PATH, exist_ok=True)
+                tf.saved_model.save(MODEL, LOCAL_MODEL_PATH)
+            except Exception:
+                pass
+    return MODEL
+
 def _movenet_keypoints(image_tf):
     """Devuelve (17,3) con (y,x,score) en [0,1]."""
     inp = tf.image.resize_with_pad(tf.expand_dims(image_tf, axis=0), 256, 256)
@@ -55,8 +70,7 @@ def _has_hands_and_torso(kps, min_score=0.30):
     
 def _load_movenet():
     global _movenet
-    url = "https://tfhub.dev/google/movenet/singlepose/thunder/4"
-    _movenet = hub.load(url)
+    _movenet = _get_model()
     return _movenet
 
 def _decode_base64_to_pil(b64: str) -> Image.Image:
@@ -98,7 +112,7 @@ def _detect_pose(image, modelo, tau=0.40, min_score=0.30, default_class=0):
 def health():
     return {"status": "ok"}
 
-@app.post("/predict", response_model=PredictOut)
+@app.post("/predict")
 def predict(payload: PredictIn):
     results = []
 
