@@ -1,0 +1,22 @@
+name: Deploy to Azure Web App
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Zip artifact
+        run: |
+          zip -r app.zip . -x ".git/*"
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: heimlichi-ia
+          slot-name: Production
+          package: app.zip
