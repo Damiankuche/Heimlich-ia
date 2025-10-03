@@ -31,7 +31,13 @@ jobs:
       
       - name: Install dependencies
         run: pip install -r requirements.txt
+
         
+      - name: Create deployment ZIP
+        run: |
+          rm -f app.zip
+          # Empaqueta SOLO lo necesario; NO crees .tar.gz
+          zip -r app.zip . -x ".git/*" ".github/*" "__pycache__/*" "tests/*"        
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Upload artifact for deployment jobs
@@ -68,4 +74,5 @@ jobs:
         with:
           app-name: 'HeimlichTrainerIA'
           slot-name: 'Production'
+
           
