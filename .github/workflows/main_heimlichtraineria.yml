@@ -36,7 +36,6 @@ jobs:
       - name: Create deployment ZIP
         run: |
           rm -f app.zip
-          # Empaqueta SOLO lo necesario; NO crees .tar.gz
           zip -r app.zip . -x ".git/*" ".github/*" "__pycache__/*" "tests/*"        
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
@@ -76,3 +75,4 @@ jobs:
           slot-name: 'Production'
 
           
+
