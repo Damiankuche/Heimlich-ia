@@ -115,9 +115,17 @@ def health():
 @app.post("/predict")
 def predict(payload: PredictIn):
     results = []
+    cant = 0 
+    cant_ok = 0
+    cant_mal = 0
+    puntaje_ok = 0
+    puntaje_mal = 0
 
+    
     for idx, img_b64 in enumerate(payload.images):
         try:
+            # Cuento la cant de imagenes
+            cant += 1
             
             # 1) Decodificar imagen
             img = _decode_base64_to_pil(payload.image_b64)
@@ -125,15 +133,31 @@ def predict(payload: PredictIn):
             # 2) Extraer keypoints con MoveNet
             c_hat, pred, res = _detect_pose(img,model)
 
+            # cuento la cantidad de imagenes correctas
+            if c_hat == 2
+                cant_ok += 1 
+                puntaje_ok += max(res)
+
+            # cuento la cantidad de imagenes incorrectas
+            else
+                cant_mal += 1                
+                puntaje_mal += max(res)
+
+            # obtengo promedio de puntajes
+            if cant_ok > 0
+                puntaje_ok = puntaje_ok/cant_ok
+            if cant_mal > 0        
+                puntaje_mal = puntaje_mal/puntaje_mal
+
+            # valido maniobra en base al puntaje obtenido
+            if puntaje_ok > puntaje_mal
+                prediction = "correcta"
+        
+            else
+                prediction = "incorrecta"
+                
         except Exception as e:
-            results.append(f"error: {str(e)}") 
-            
-    #return PredictOut(
-    #    predicted_label=pred_label,
-    #    predicted_index=pred_idx,
-    #    probabilities=probs,
-    #    keypoints=kps.tolist(),
-    #)
+            raise HTTPException(status_code=400, detail=e)
 
     return JSONResponse(content={"prediction": prediction})
 
