@@ -134,7 +134,7 @@ def predict(payload: PredictIn):
             c_hat, pred, res = _detect_pose(img,model)
 
             # cuento la cantidad de imagenes correctas
-            if c_hat == 2
+            if c_hat == 2:
                 cant_ok += 1 
                 puntaje_ok += max(res)
 
@@ -144,13 +144,13 @@ def predict(payload: PredictIn):
                 puntaje_mal += max(res)
 
             # obtengo promedio de puntajes
-            if cant_ok > 0
+            if cant_ok > 0:
                 puntaje_ok = puntaje_ok/cant_ok
-            if cant_mal > 0        
+            if cant_mal > 0:        
                 puntaje_mal = puntaje_mal/puntaje_mal
 
             # valido maniobra en base al puntaje obtenido
-            if puntaje_ok > puntaje_mal
+            if puntaje_ok > puntaje_mal:
                 prediction = "correcta"
         
             else
