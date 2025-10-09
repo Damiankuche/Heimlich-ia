@@ -18,8 +18,10 @@ jobs:
       # Crea un zip limpio solo con los archivos del repo (sin .git, venv, etc.)
       - name: Create deployment ZIP
         run: |
-          git ls-files -z | xargs -0 zip -q -r app.zip \
-            -x ".github/*" "tests/*" "*.ipynb_checkpoints/*"
+          rm -f app.zip
+          zip -r app.zip . \
+          -x ".git/*" ".github/*" "venv/*" "__pycache__/*" "tests/*" \
+          ".pytest_cache/*" "*.ipynb_checkpoints/*"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -60,3 +62,4 @@ jobs:
 
       - name: Start app
         run: az webapp start -g rg-heimlich -n HeimlichTrainerIA
+
