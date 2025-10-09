@@ -1,65 +1,44 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
-
 name: Build and deploy Python app to Azure Web App - HeimlichTrainerIA
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
+
+concurrency:
+  group: heimlichtraineria
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read #This is required for actions/checkout
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python version
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Create and start virtual environment
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-      
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-        
+      # Crea un zip limpio solo con los archivos del repo (sin .git, venv, etc.)
       - name: Create deployment ZIP
         run: |
-          rm -f app.zip
-          zip -r app.zip . -x ".git/*" ".github/*" "__pycache__/*" "tests/*"        
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
+          git ls-files -z | xargs -0 zip -q -r app.zip \
+            -x ".github/*" "tests/*" "*.ipynb_checkpoints/*"
 
-      - name: Upload artifact for deployment jobs
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: python-app
-          path: |
-            .
-            !venv/
+          name: app-zip
+          path: app.zip
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 60
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
-
+      id-token: write
+      contents: read
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: python-app
-      
+          name: app-zip
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -67,12 +46,17 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B6F0616A092F4236BE81C08455599B4F }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_7A733A35A22041A8AF1484793B31377B }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Stop app (free deployment lock)
+        run: az webapp stop -g rg-heimlich -n HeimlichTrainerIA
+
+      - name: Deploy to Azure Web App (explicit package)
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
-          app-name: 'HeimlichTrainerIA'
-          slot-name: 'Production'
+          app-name: HeimlichTrainerIA
+          package: app.zip
+          startup-command: >
+            gunicorn -k uvicorn.workers.UvicornWorker
+            src.main:app --bind=0.0.0.0:8000 --workers=1 --timeout=600
 
-          
-
+      - name: Start app
+        run: az webapp start -g rg-heimlich -n HeimlichTrainerIA
