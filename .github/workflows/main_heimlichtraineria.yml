@@ -49,7 +49,7 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_7A733A35A22041A8AF1484793B31377B }}
 
       - name: Stop app (free deployment lock)
-        run: az webapp stop -g rg-heimlich -n HeimlichTrainerIA
+        run: az webapp stop -g gr-heimlichTrainer -n HeimlichTrainerIA
 
       - name: Deploy to Azure Web App (explicit package)
         uses: azure/webapps-deploy@v3
@@ -61,5 +61,6 @@ jobs:
             src.main:app --bind=0.0.0.0:8000 --workers=1 --timeout=600
 
       - name: Start app
-        run: az webapp start -g rg-heimlich -n HeimlichTrainerIA
+        run: az webapp start -g gr-heimlichTrainer -n HeimlichTrainerIA
+
 
