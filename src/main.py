@@ -139,7 +139,7 @@ def predict(payload: PredictIn):
                 puntaje_ok += max(res)
 
             # cuento la cantidad de imagenes incorrectas
-            else
+            else:
                 cant_mal += 1                
                 puntaje_mal += max(res)
 
@@ -153,7 +153,7 @@ def predict(payload: PredictIn):
             if puntaje_ok > puntaje_mal:
                 prediction = "correcta"
         
-            else
+            else:
                 prediction = "incorrecta"
                 
         except Exception as e:
