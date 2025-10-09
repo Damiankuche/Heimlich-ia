@@ -146,7 +146,7 @@ def predict(payload: PredictIn):
             # obtengo promedio de puntajes
             if cant_ok > 0:
                 puntaje_ok = puntaje_ok/cant_ok
-            if cant_mal > 0:        
+            if cant_mal > 0:       
                 puntaje_mal = puntaje_mal/puntaje_mal
 
             # valido maniobra en base al puntaje obtenido
