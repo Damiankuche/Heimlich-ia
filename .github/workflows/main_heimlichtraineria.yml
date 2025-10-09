@@ -15,13 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Crea un zip limpio solo con los archivos del repo (sin .git, venv, etc.)
       - name: Create deployment ZIP
         run: |
           rm -f app.zip
           zip -r app.zip . \
-          -x ".git/*" ".github/*" "venv/*" "__pycache__/*" "tests/*" \
-          ".pytest_cache/*" "*.ipynb_checkpoints/*"
+            -x ".git/*" ".github/*" "venv/*" "__pycache__/*" "tests/*" \
+               ".pytest_cache/*" "*.ipynb_checkpoints/*"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -41,15 +40,16 @@ jobs:
         with:
           name: app-zip
 
-      - name: Login to Azure
+      - name: Login to Azure (OIDC)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4780860FA73F40B58579237114EF084A }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B6F0616A092F4236BE81C08455599B4F }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_7A733A35A22041A8AF1484793B31377B }}
 
-      - name: Stop app (free deployment lock)
-        run: az webapp stop -g gr-heimlichTrainer -n HeimlichTrainerIA
+      # Evita conflicto por reinicios del contenedor SCM
+      - name: Grace period (avoid SCM restart conflict)
+        run: sleep 45
 
       - name: Deploy to Azure Web App (explicit package)
         uses: azure/webapps-deploy@v3
@@ -59,8 +59,3 @@ jobs:
           startup-command: >
             gunicorn -k uvicorn.workers.UvicornWorker
             src.main:app --bind=0.0.0.0:8000 --workers=1 --timeout=600
-
-      - name: Start app
-        run: az webapp start -g gr-heimlichTrainer -n HeimlichTrainerIA
-
-
