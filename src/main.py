@@ -80,7 +80,7 @@ def _decode_base64_to_pil(b64: str) -> Image.Image:
         raw = base64.b64decode(b64, validate=True)
         return Image.open(io.BytesIO(raw)).convert("RGB")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Imagen base64 inválida: {e}")
+        raise HTTPException(status_code=400, detail={"error": "base64 inválida", "reason": str(e)})
 
 def _detect_pose(image_tf, modelo, tau=0.40, min_score=0.30, default_class=0):
     """
@@ -107,7 +107,7 @@ def health():
 @app.post("/predict")
 def predict(payload: PredictIn):
     if not payload.images:
-        raise HTTPException(status_code=400, detail="La lista 'images' está vacía.")
+        raise HTTPException(status_code=400, detail={"error": "Error interno", "reason": "La lista de imagenes está vacía"})
 
     cant = 0 
     cant_ok = 0
@@ -154,7 +154,7 @@ def predict(payload: PredictIn):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {repr(e)}")
-
+         raise HTTPException(status_code=500, detail={"error": "Error interno", "reason": str(e)})
+        
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
