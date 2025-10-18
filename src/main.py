@@ -107,7 +107,7 @@ def health():
 @app.post("/predict")
 def predict(payload: PredictIn):
     if not payload.images:
-        rraise HTTPException(status_code=400, detail="La lista 'images' está vacía.")
+        raise HTTPException(status_code=400, detail="La lista 'images' está vacía.")
 
     cant = 0 
     cant_ok = 0
@@ -151,10 +151,8 @@ def predict(payload: PredictIn):
             "ok": {"count": cant_ok, "avg_conf": round(prom_ok, 3)},
             "mal": {"count": cant_mal, "avg_conf": round(prom_mal, 3)}
         })
-    except HTTPException:
-        raise
     except Exception as e:
-         raise HTTPException(status_code=500, detail=f"Error interno: {repr(e)}")
+            raise HTTPException(status_code=500, detail=f"Error interno: {repr(e)}")
         
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
