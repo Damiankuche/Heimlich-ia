@@ -11,3 +11,6 @@ gunicorn==22.0.0
 pydantic==2.9.2
 starlette==0.37.2
 typing-extensions>=4.12.2
+requests
+mediapipe==0.10.14
+opencv-python
